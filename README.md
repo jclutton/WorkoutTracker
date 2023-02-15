@@ -1,3 +1,3 @@
 # WorkoutTracker
 
-This project is used for personal use. It integrates multiple Google Forms to track workout and health related data.
+This project is for personal use. Data are submitted through google forms onto google sheets. Google sheets are automatically read into the project and used to create a markdown report with workout and health metrics. 
