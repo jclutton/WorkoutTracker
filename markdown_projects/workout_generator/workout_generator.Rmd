@@ -1,0 +1,290 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(pacman)
+p_load(rmarkdown,gt,tidyverse, lubridate, RColorBrewer, plotly, DT)
+
+#### Declare Paths ####
+project_dir = "C:/Users/Jon/Documents/R_projects/WorkoutTracker"
+
+#### Source Load Clean ####
+#source(file.path(project_dir,'R','load+clean_data.R'))
+
+#### Load Data ####
+load(file.path(project_dir,"data","rdata","clean.Rdata"))
+
+```
+
+```{r logo, echo = FALSE,  fig.show = "hold", out.width = "25%", fig.align = "right", include = FALSE}
+    knitr::include_graphics(file.path(project_dir,'markdown_projects','workout_generator','movement_goals.jpg'))
+  
+```
+
+<center>
+
+# Daily Workout
+
+</center>
+
+**Goals**: To move in rhythm <br><br> - In pain, move slowly through areas of discomfort with kindness and attention. <br> - Kindness eases changes. <br> - We can do hard things. <br><br>
+
+## Next Workout
+
+```{r workout, echo=FALSE, message=FALSE, fig.width=10}
+#### Clean workout log data ####
+workout_log_clean <- workout_log %>%
+  pivot_longer(cols = c(contains("Exercise"),contains("Therapy"))) %>%
+  filter(!is.na(value))
+
+#### Next Workout #####
+next_workout <- workout_log_clean %>%
+  left_join(., exercises_codebook, by = c("value" = "Exercise")) %>%
+  mutate(next_day = case_when(Day == 1 ~ 1+1,
+                              #Day == 2 ~ 1+1,
+                              Day == 2 ~ 1)) %>%
+  mutate(next_week = case_when(next_day == 1 & Week == 4 ~ 1,
+                               next_day == 1 & Week < 4 ~  as.numeric(Week+1),
+                               T ~ as.numeric(Week))) %>%
+  tail(., n=1) %>%
+  select(next_day,next_week)
+
+#### Find Min and Maxes
+mins_maxes <- workout_log_clean %>%
+  filter(!is.na(Week)) %>%
+  filter(!is.na(value)) %>%
+  group_by(value) %>%
+  summarize(min = min(Weight), max = max(Weight), last_weight = last(Weight), last_reps = last(Reps))
+
+#### Create Workout Data frame ####
+workout <- exercises_codebook %>%
+  filter(Day == next_workout$next_day) %>%
+  mutate(Week = next_workout$next_week) %>%
+  left_join(., week_codebook, by = c("Week" = "week")) %>%
+  left_join(., mins_maxes, by = c("Exercise" = "value")) %>%
+  mutate(across(everything(),
+                ~ ifelse(is.na(.x) == TRUE, "", .)))
+
+gt(workout) %>%
+    tab_header(
+    title = "Next Workout",
+    subtitle = paste0("Last Workout on ",as.Date(tail(workout_log_clean$Timestamp, n=1)))
+  )
+
+
+
+
+```
+
+<br><br>
+
+## Exercises {.tabset}
+
+```{r exercise_setings, echo=FALSE, message = FALSE}
+figure_height = 7
+figure_width = 11
+align = "left"
+
+```
+
+### Upper Body
+
+```{r upper_body, echo=FALSE, fig.align=align, fig.height=figure_height, fig.width=figure_width, message=FALSE}
+#### Clean workout log data ####
+exercises_codebook <- exercises_codebook %>%
+  filter(!is.na(Exercise))
+
+
+#Removing some non-weighted exercises to make it easier to plot
+workout_log_clean <- workout_log %>%
+  pivot_longer(cols = c(contains("Exercise"),contains("Therapy"))) %>%
+  filter(!is.na(value)) %>%
+  filter(Week != 4) %>%
+  filter(name == "Upper Body Exercise") %>%
+  filter(Timestamp > ymd("2022-09-15")) %>%
+  filter(!is.na(Weight))
+
+
+workout_log_clean %>%
+  ggplot(., aes(x=Timestamp, y=Weight, colour=value)) +
+  geom_line(aes(color = value), size = 1.2) +
+  geom_point() +
+  scale_colour_brewer(palette = "Set3") +
+  scale_fill_brewer(palette = "Set3") +
+  ylim(0, max(workout_log_clean$Weight)) +
+  theme_bw() +
+  theme(legend.position="top")
+
+# ggplotly(exercise_plot, tooltip="text") %>%
+#   plotly::style(hoverlabel=list(align="left")) %>%
+#   layout(legend = list(orientation = 'h'))
+
+```
+
+### Lower Body
+
+```{r lower_body, echo=FALSE, message=FALSE, fig.width=figure_width, fig.height=figure_height,  fig.align=align}
+#### Clean workout log data ####
+exercises_codebook <- exercises_codebook %>%
+  filter(!is.na(Exercise))
+
+
+#Removing some non-weighted exercises to make it easier to plot
+workout_log_clean <- workout_log %>%
+  pivot_longer(cols = c(contains("Exercise"),contains("Therapy"))) %>%
+  filter(!is.na(value)) %>%
+  filter(Week != 4) %>%
+  filter(name == "Lower Body Exercise") %>%
+  filter(Timestamp > ymd("2022-09-15")) %>%
+  filter(!is.na(Weight))
+
+ workout_log_clean %>%
+  ggplot(., aes(x=Timestamp, y=Weight, colour=value)) +
+  geom_line(aes(color = value), size = 1.2) +
+  geom_point() +
+  scale_colour_brewer(palette = "Set3") +
+  scale_fill_brewer(palette = "Set3") +
+  ylim(0, max(workout_log_clean$Weight)) +
+  theme_bw() +
+  theme(legend.position="top")
+
+# ggplotly(exercise_plot, tooltip="text") %>%
+#   plotly::style(hoverlabel=list(align="left")) %>%
+#   layout(legend = list(orientation = 'h'))
+
+
+```
+
+### Core
+
+```{r core, echo=FALSE, message=FALSE, fig.width=figure_width, fig.height=figure_height,  fig.align=align}
+#### Clean workout log data ####
+exercises_codebook <- exercises_codebook %>%
+  filter(!is.na(Exercise))
+
+
+#Removing some non-weighted exercises to make it easier to plot
+workout_log_clean <- workout_log %>%
+  pivot_longer(cols = c(contains("Exercise"),contains("Therapy"))) %>%
+  filter(!is.na(value)) %>%
+  filter(Week != 4) %>%
+  filter(name == "Core Exercise") %>%
+  filter(Timestamp > ymd("2022-09-15")) %>%
+  filter(!is.na(Weight))
+
+
+#exercise_plot <-
+  workout_log_clean %>%
+  ggplot(., aes(x=Timestamp, y=Weight, colour=value)) +
+  geom_line(aes(color = value), size = 1.2) +
+  geom_point() +
+  scale_colour_brewer(palette = "Set3") +
+  scale_fill_brewer(palette = "Set3") +
+  ylim(0, max(workout_log_clean$Weight)) +
+  theme_bw() +
+  theme(legend.position="top")
+
+# ggplotly(exercise_plot, tooltip="text") %>%
+#   plotly::style(hoverlabel=list(align="left")) %>%
+#   layout(legend = list(orientation = 'h'))
+
+
+```
+
+## Supplements
+
+```{r supplements, echo=FALSE, message=FALSE, fig.width=10}
+#### Clean workout log data ####
+supplement_chart <- supplement_codebook %>%
+  filter(Frequency != "Never") %>%
+  filter(Frequency != "Not active") %>%
+  select(-Safety) %>%
+  mutate(days_since_last_taken = NA) %>%
+  mutate(total_taken = NA) %>%
+  mutate(Schedule = NA_Date_)
+
+for(i in 1:nrow(supplement_chart)){
+  supplement <- supplement_chart$supplement[i]
+  
+  last <- max(daily_supplements$date[grepl(supplement, daily_supplements$supplements)])
+  total <- sum(str_count(daily_supplements$supplements, supplement))
+  next_day <- case_when(last + days(supplement_chart$days_between[i]) < today() ~ today(),
+                        T ~ last + days(supplement_chart$days_between[i]))
+  
+  supplement_chart$days_since_last_taken[i] <- today() - last
+  supplement_chart$total_taken[i] <- total
+  supplement_chart$Schedule[i] <- next_day
+}
+
+supplement_chart %>%
+  arrange(Schedule, total_taken, days_since_last_taken) %>%
+  select(supplement, Schedule, everything(), -Frequency, -days_between) %>%
+  datatable(.,
+            rownames = F,
+            filter = "top",
+            class = 'cell-border stripe',
+            editable = TRUE, 
+            options = list(columnDefs = 
+                             list(list(className = 'dt-center', 
+                                       targets = "_all")),
+                           pageLength = 20,
+                           scrollX = T))
+
+
+
+
+
+```
+
+## Supplements History
+
+```{r supplement_history, echo=FALSE, message=FALSE, fig.width=10}
+#### Clean workout log data ####
+daily_supplements %>%
+  filter(today() - date <= 90) %>%
+  arrange(desc(date)) %>%
+  datatable(.,
+            rownames = F,
+            filter = "top",
+            class = 'cell-border stripe',
+            editable = TRUE, 
+            options = list(columnDefs = 
+                             list(list(className = 'dt-center', 
+                                       targets = "_all")),
+                           pageLength = 20,
+                           scrollX = T))
+
+
+
+
+
+```
+
+## Notes
+
+```{r notes, echo=FALSE, message=FALSE, fig.width=10}
+#### Clean workout log data ####
+
+notes <- daily_check %>%
+  filter(!is.na(Notes)) %>%
+  arrange(desc(Timestamp)) %>%
+  select(Timestamp, Notes)
+
+notes %>%
+  datatable(.,
+            rownames = F,
+            filter = "top",
+            class = 'cell-border stripe',
+            editable = TRUE, 
+            options = list(columnDefs = 
+                             list(list(className = 'dt-center', 
+                                       targets = "_all")),
+                           pageLength = 20,
+                           scrollX = T))
+
+
+
+
+
+```
